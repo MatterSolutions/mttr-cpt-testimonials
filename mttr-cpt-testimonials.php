@@ -38,11 +38,17 @@ class mttr_custom_post_type_mttr_testimonials {
     	// Register the Taxonomy
     	add_action( 'init', array( self::getInstance(), 'register_taxonomy' ), 3 );
 
+    	// Add the image size
+    	add_action( 'init', array( self::getInstance(), 'image_size' ), 3 );
+
     	// Remove the flexible content, it's not needed
     	add_filter( 'mttr_flex_layouts_locations_post_types_array', array( self::getInstance(), 'unhook_flexible_content' ) );
 
     	// Filter the ordering for auto grid items
     	add_filter( 'mttr_latest_posts_' . self::$slug, array( self::getInstance(), 'filter_grid_ordering' ) );
+
+    	// Add the testimonial custom fields
+    	add_action( 'init', array( self::getInstance(), 'add_custom_fields' ), 10 );
 
     	// Add Gforms options if wanted
     	add_filter( 'gform_pre_render', array( self::getInstance(), 'gravity_forms_testimonials' ) );
@@ -111,6 +117,7 @@ class mttr_custom_post_type_mttr_testimonials {
 		            'editor',
 		            'page-attributes',
 		            'thumbnail',
+		            'excerpt',
 
 		        ),
 
@@ -132,6 +139,62 @@ class mttr_custom_post_type_mttr_testimonials {
 		}
 
 		return $args;
+
+	}
+
+
+
+
+	function add_custom_fields() {
+
+		if ( function_exists( 'acf_add_local_field_group' ) ):
+
+			$fields = array (
+				'key' => 'group_58c5d5add0a1b',
+				'title' => 'Testimonials Meta',
+				'fields' => array (
+					array (
+						'key' => 'field_58c5d5b22c43e',
+						'label' => 'Company Name',
+						'name' => 'mttr_company_name',
+						'type' => 'text',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+					),
+				),
+				'location' => array (
+					array (
+						array (
+							'param' => 'post_type',
+							'operator' => '==',
+							'value' => 'mttr_testimonials',
+						),
+					),
+				),
+				'menu_order' => 0,
+				'position' => 'acf_after_title',
+				'style' => 'default',
+				'label_placement' => 'top',
+				'instruction_placement' => 'label',
+				'hide_on_screen' => '',
+				'active' => 1,
+				'description' => '',
+			);
+
+			acf_add_local_field_group( apply_filters( 'mttr_cpt_testimonials_custom_fields', $fields ) );
+
+		endif;
 
 	}
 
@@ -161,28 +224,30 @@ class mttr_custom_post_type_mttr_testimonials {
 
 	    foreach ( $form['fields'] as &$field ) {
 
-	        if ( $field->type != 'select' && $field->type != 'radio' && $field->type != 'checkbox' && strpos( $field->cssClass, 'mttr-cpt-testimonials' ) === false ) {
-	            continue;
-	        }
+	    	$needle = strpos( $field->cssClass, 'mttr-cpt-testimonials' );
 
-	        // you can add additional parameters here to alter the posts that are retrieved
-	        // more info: [http://codex.WordPress.org/Template_Tags/get_posts](http://codex.WordPress.org/Template_Tags/get_posts)
-	        $posts = get_posts( 'numberposts=-1&post_status=publish&post_type=' . self::$slug . '&order=ASC&orderby=title' );
+			if ( ( $field->type == 'select' || $field->type == 'radio' || $field->type == 'checkbox' ) && $needle !== false ) {
 
-	        if ( is_array( $posts ) && !empty( $posts ) ) {
+				// you can add additional parameters here to alter the posts that are retrieved
+				// more info: [http://codex.WordPress.org/Template_Tags/get_posts](http://codex.WordPress.org/Template_Tags/get_posts)
+				$posts = get_posts( 'numberposts=-1&post_status=publish&post_type=' . self::$slug . '&order=ASC&orderby=title' );
 
-		        $choices = array();
+				if ( is_array( $posts ) && !empty( $posts ) ) {
 
-		        foreach ( $posts as $post ) {
+					$choices = array();
 
-		            $choices[] = array( 'text' => $post->post_title, 'value' => $post->post_title );
+					foreach ( $posts as $post ) {
 
-		        }
+						$choices[] = array( 'text' => $post->post_title, 'value' => $post->post_title );
 
-		        // update 'Select a Post' to whatever you'd like the instructive option to be
-		        $field->choices = $choices;
+					}
 
-		    }
+					// update 'Select a Post' to whatever you'd like the instructive option to be
+					$field->choices = $choices;
+
+				}
+
+			}
 
 	    }
 
